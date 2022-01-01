@@ -135,3 +135,19 @@ function loadServer(){
     loadServer();
 
 client.init_client();
+// Disable the contextual menu
+canvas.oncontextmenu = function() {
+    return false;
+}
+//put the cursor move when the mouse is right clicked
+canvas.onmousedown = function(e){
+    if (e.button == 2){
+        canvas.style.cursor = "move";
+    }else{
+        canvas.style.cursor = "crosshair";
+    }
+}
+//When the right click is released, set the cursor to crosshair
+canvas.onmouseup = function(e){
+    canvas.style.cursor = "crosshair";
+}
