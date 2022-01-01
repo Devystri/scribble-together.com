@@ -135,4 +135,3 @@ function loadServer(){
     loadServer();
 
 client.init_client();
-client.send_update(image)
