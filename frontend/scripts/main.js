@@ -45,9 +45,9 @@ const PIXEL_SIZE = 10;
 function draw(){
     ctx.beginPath();
     ctx.fillStyle = color;
-    ctx.fillRect( mouseX, lastMouseY, PIXEL_SIZE, PIXEL_SIZE );
+    ctx.fillRect( mouseX, mouseY, PIXEL_SIZE, PIXEL_SIZE );
     ctx.closePath();
-    save(Math.round(mouseX/PIXEL_SIZE), Math.round(mouseY/10), color);
+    save(Math.round(mouseX/PIXEL_SIZE), Math.round(mouseY/PIXEL_SIZE), color);
 }
 
 function moveMouse(e){
@@ -55,11 +55,17 @@ function moveMouse(e){
     mouseY =  Math.round((e.clientY - canvas.offsetTop)/PIXEL_SIZE)*PIXEL_SIZE;
     //If the MouseX en MouseY coordinates are not in the serverImage array
     if (e.buttons == 1){
+        var drawed = false;
         for( i = 0; i < serverImage.length; i++) {
-            if((mouseX/10) == serverImage[i].x && (mouseY/10) == serverImage[i].y){
-                break;  
+            if(Math.round(mouseX/PIXEL_SIZE) == serverImage[i].x && Math.round(mouseY/PIXEL_SIZE) == serverImage[i].y){
+                drawed =  true;
+                break;
+
             }
+        }
+        if(!drawed){
             draw();
+
         }    
     }
     lastMouseX = mouseX;
@@ -124,7 +130,7 @@ function loadServer(){
     }
 }
 
-loadServer();
+    loadServer();
 
 client.init_client();
 
