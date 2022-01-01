@@ -18,10 +18,16 @@ html, body, canvas{
 /* Canvas */
 
 #drawing-canvas{
-    background-color: white;
+    background-color: transparent;
     position: absolute;
-    z-index: 0;
+    z-index: 1;
     cursor: crosshair;
+}
+
+/* Server Canvas */
+
+#server-canvas{
+    /* Style */
 }
 
 /* Report button */
@@ -43,13 +49,13 @@ html, body, canvas{
 
 .div-colors{
     position: absolute;
-    z-index: 1;
     width: fit-content;
     padding: 30px 5px;
     background-color: rgb(87, 87, 87);
     border-radius: 30px;
     bottom: 15px;
     right: 15px;
+    z-index: 2;
 }
 #colors-id{
     width: fit-content;

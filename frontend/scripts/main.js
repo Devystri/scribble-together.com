@@ -28,16 +28,26 @@ document.addEventListener('click', function(e) {
         }
 }, false);
 
+window.addEventListener("resize", function(e){
+    canvas.width = document.body.clientWidth; 
+    canvas.height = document.body.clientHeight; 
+    canvasWidth = canvas.width;
+    canvasHeight = canvas.height;
+    //Resize canvas server
+    serverCanvas.width = document.body.clientWidth;
+    serverCanvas.height = document.body.clientHeight;
+    serverCanvasWidth = serverCanvas.width;
+    serverCanvasHeight = serverCanvas.height;
+}, true);
+
 const PIXEL_SIZE = 10;
 
 function draw(){
     ctx.beginPath();
     ctx.fillStyle = color;
-
-    ctx.fillRect( (2*mouseX - PIXEL_SIZE)/2, (2*lastMouseY - PIXEL_SIZE)/2, PIXEL_SIZE, PIXEL_SIZE );
-
+    ctx.fillRect( (2*mouseX)/2, (2*lastMouseY)/2, PIXEL_SIZE, PIXEL_SIZE );
     ctx.closePath();
-
+    save(Math.round(mouseX/PIXEL_SIZE), Math.round(mouseY/10), color);
 }
 
 function moveMouse(e){
@@ -45,11 +55,9 @@ function moveMouse(e){
     mouseY =  Math.round((e.clientY - canvas.offsetTop)/PIXEL_SIZE)*PIXEL_SIZE;
     if (e.buttons == 1){
         draw();
-        
     }
     lastMouseX = mouseX;
     lastMouseY = mouseY;
-
 }
 
 function init(){
@@ -60,8 +68,55 @@ function init(){
     ctx = canvas.getContext("2d");
     canvasWidth = canvas.width;
     canvasHeight = canvas.height;
-    console.log(canvasHeight, canvasWidth);
     canvas.addEventListener("mousemove", moveMouse);
 } 
 
 init();
+
+//SAVE IMAGE
+let image = [];
+
+function save(x, y, color){
+    var pixel = {x: x, y: y, color: color};
+    let newLength = image.push(pixel);
+}
+
+//LOAD IMAGE
+function load(){
+    for (let i = 0; i < image.length; i++){
+        ctx.beginPath();
+        ctx.fillStyle = image[i].color;
+        ctx.fillRect(2*(image[i].x*PIXEL_SIZE)/2, (2*image[i].y*PIXEL_SIZE)/2, PIXEL_SIZE, PIXEL_SIZE);
+        ctx.closePath();
+    }
+}
+
+//Canvas Server
+//Size of canvas
+ var serverCanvas, serverCtx, serverCanvasWidth, serverCanvasHeight;
+ 
+ function initServerCanvas(){
+    serverCanvas = document.getElementById('server-canvas');
+    serverCanvas.width = document.body.clientWidth;
+    serverCanvas.height = document.body.clientHeight;
+    serverCtx = serverCanvas.getContext("2d");
+    serverCanvasWidth = serverCanvas.width;
+    serverCanvasHeight = serverCanvas.height;
+}
+
+initServerCanvas();
+
+//LOAD IMAGE FROM SERVER
+let serverImage = [{x: 0, y: 0, color: "#000000"}, {x: 72, y: 23, color: "#000000"}, {x: 72, y: 23, color: "#000000"}, {x: 71, y: 23, color: "#000000"}, {x: 71, y: 23, color: "#000000"}, {x: 70, y: 23, color: "#000000"}, {x: 69, y: 23, color: "#000000"}, {x: 69, y: 23, color: "#000000"}, {x: 68, y: 23, color: "#000000"}, {x: 68, y: 23, color: "#000000"}];
+
+function loadServer(){
+    for (let i = 0; i < serverImage.length; i++){
+        serverCtx.beginPath();
+        serverCtx.fillStyle = serverImage[i].color;
+        serverCtx.fillRect(2*(serverImage[i].x*PIXEL_SIZE)/2, (2*serverImage[i].y*PIXEL_SIZE)/2, PIXEL_SIZE, PIXEL_SIZE);
+        serverCtx.closePath();
+    }
+}
+
+loadServer();
+
