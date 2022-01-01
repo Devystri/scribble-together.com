@@ -18,10 +18,16 @@ html, body, canvas{
 /* Canvas */
 
 #drawing-canvas{
-    background-color: white;
+    background-color: transparent;
     position: absolute;
     z-index: 0;
     cursor: crosshair;
+}
+
+/* Server Canvas */
+
+#server-canvas{
+    /* Style */
 }
 
 /* Report button */
