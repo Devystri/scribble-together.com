@@ -130,9 +130,20 @@ function load(){
 initServerCanvas();
 
 //LOAD IMAGE FROM SERVER
-let serverImage = [{x: 0, y: 0, color: "#000000"}, {x: 72, y: 23, color: "#000000"}, {x: 72, y: 23, color: "#000000"}, {x: 71, y: 23, color: "#000000"}, {x: 71, y: 23, color: "#000000"}, {x: 70, y: 23, color: "#000000"}, {x: 69, y: 23, color: "#000000"}, {x: 69, y: 23, color: "#000000"}, {x: 68, y: 23, color: "#000000"}, {x: 68, y: 23, color: "#000000"}];
+let serverImage = [];
 
 function loadServer(){
+    csv_pixels = client.download_pixels("0").split('\r\n');
+    for (pixel of csv_pixels){
+        parameters =  pixel.split(';')
+        if(parameters.length != 3){
+            continue;
+        }
+        x = parseInt(parameters[0]);
+        y = parseInt(parameters[1]);
+        color = parameters[2];
+        serverImage.push({x: x, y: y, color: color});
+    }
     for (let i = 0; i < serverImage.length; i++){
         serverCtx.beginPath();
         serverCtx.fillStyle = serverImage[i].color;
@@ -140,10 +151,10 @@ function loadServer(){
         serverCtx.closePath();
     }
 }
-
-    loadServer();
-
 client.init_client();
+
+loadServer();
+
 // Disable the contextual menu
 canvas.oncontextmenu = function() {
     return false;

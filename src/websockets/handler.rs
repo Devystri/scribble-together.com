@@ -1,9 +1,11 @@
-use std::time::{Duration, Instant};
+use std::{time::{Duration, Instant}};
 
 use actix::{Actor, StreamHandler, AsyncContext, ActorContext};
-use actix_web::{get, web, App, HttpRequest, HttpServer, Responder, Error, HttpResponse };
+use actix_web::{get, web::{self, block}, App, HttpRequest, HttpServer, Responder, Error, HttpResponse };
 use actix_web_actors::ws;
-use actix_http::Response;
+use crate::chunk::{self, Pixel};
+
+use serde_json;
 struct WebSocketServer{
     hb: Instant,
 
@@ -26,7 +28,6 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WebSocketServer {
         ctx: &mut Self::Context,
     ) {
         // process websocket messages
-        println!("WS: {:?}", msg);
         match msg {
             Ok(ws::Message::Ping(msg)) => {
                 self.hb = Instant::now();
@@ -35,7 +36,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WebSocketServer {
             Ok(ws::Message::Pong(_)) => {
                 self.hb = Instant::now();
             }
-            Ok(ws::Message::Text(text)) => ctx.text(text),
+            Ok(ws::Message::Text(text)) => self.handle_request( &text.to_string()),
             Ok(ws::Message::Binary(bin)) => ctx.binary(bin),
             Ok(ws::Message::Close(reason)) => {
                 ctx.close(reason);
@@ -45,6 +46,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WebSocketServer {
         }
     }
 }
+
 impl WebSocketServer{
     fn new() -> Self {
         Self { hb: Instant::now() }
@@ -66,6 +68,22 @@ impl WebSocketServer{
             ctx.ping(b"");
         });
     }
+
+    fn handle_request(&self, message: &str)  {
+        //TODO error handling
+        let pixel: Pixel = serde_json::from_str(message).unwrap();
+        let mut map = chunk::MAP.lock().unwrap();
+        match map.add_pixel(&pixel, "") {
+            Ok(_) => {},
+            Err(e) => println!("{:?}", e),
+        }
+        match map.save(){
+            Ok(_) => {},
+            Err(e) => println!("{:?}", e),
+        }
+        println!("{}", message);
+        
+    }
 }
 
 
@@ -74,4 +92,14 @@ pub async fn index(req: HttpRequest, stream: web::Payload) -> Result<HttpRespons
 
     println!("{:?}", resp);
     resp
+}
+
+mod errors{
+    use super::*;
+
+    pub enum HandleRequestError{
+        ImpossibleToHandle
+    } 
+        
+    
 }
