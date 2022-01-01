@@ -4,7 +4,7 @@
 var exampleSocket;
 
 
-export function init_client() {
+function init_client() {
     var wsUri = (window.location.protocol=='https:'&&'wss://'||'ws://')+window.location.host + '/ws/';
 
     var exampleSocket = new WebSocket(wsUri);    
