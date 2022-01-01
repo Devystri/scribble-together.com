@@ -126,4 +126,5 @@ function loadServer(){
 
 loadServer();
 
-init_client();
+client.init_client();
+
