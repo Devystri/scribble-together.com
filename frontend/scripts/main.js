@@ -120,3 +120,6 @@ function loadServer(){
 
 loadServer();
 
+import { init_client } from "./client.js";
+
+init_client();
