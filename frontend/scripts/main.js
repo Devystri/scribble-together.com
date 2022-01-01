@@ -60,9 +60,18 @@ function moveMouse(e){
             if(Math.round(mouseX/PIXEL_SIZE) == serverImage[i].x && Math.round(mouseY/PIXEL_SIZE) == serverImage[i].y){
                 drawed =  true;
                 break;
-
+            }
+            //if it is the same color
+             
+        }
+        for(i = 0; i < image.length; i++){
+            var pixel = image[i];
+            if(pixel.color == color && Math.round(mouseX/PIXEL_SIZE) == pixel.x && Math.round(mouseY/PIXEL_SIZE) == pixel.y){
+                drawed = true;
+                break;
             }
         }
+
         if(!drawed){
             draw();
 
