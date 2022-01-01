@@ -7,15 +7,18 @@ class Client{
     init_client =  function init_client() {
         var wsUri = (window.location.protocol=='https:'&&'wss://'||'ws://')+window.location.host + '/ws/';
     
-        var exampleSocket = new WebSocket(wsUri);    
+        self.socket = new WebSocket(wsUri);    
         console.log('Connecting...');
-        exampleSocket.onopen = function() {
+        socket.onopen = function() {
             console.log('Connected.');
         };
     
     }
     send_update(data){
-        exampleSocket.send(data);
+        if(self.socket.readyState){
+            self.socket.send(JSON.stringify(data));
+        }
+
     }
 }
 

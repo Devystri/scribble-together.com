@@ -84,6 +84,8 @@ let image = [];
 
 function save(x, y, color){
     var pixel = {x: x, y: y, color: color};
+
+    client.send_update(pixel)
     let newLength = image.push(pixel);
 }
 
@@ -127,4 +129,4 @@ function loadServer(){
 loadServer();
 
 client.init_client();
-
+client.send_update(image)
