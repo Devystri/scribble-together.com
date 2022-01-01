@@ -33,6 +33,11 @@ window.addEventListener("resize", function(e){
     canvas.height = document.body.clientHeight; 
     canvasWidth = canvas.width;
     canvasHeight = canvas.height;
+    //Resize canvas server
+    serverCanvas.width = document.body.clientWidth;
+    serverCanvas.height = document.body.clientHeight;
+    serverCanvasWidth = serverCanvas.width;
+    serverCanvasHeight = serverCanvas.height;
 }, true);
 
 const PIXEL_SIZE = 10;
@@ -40,7 +45,7 @@ const PIXEL_SIZE = 10;
 function draw(){
     ctx.beginPath();
     ctx.fillStyle = color;
-    ctx.fillRect( (2*mouseX - PIXEL_SIZE)/2, (2*lastMouseY - PIXEL_SIZE)/2, PIXEL_SIZE, PIXEL_SIZE );
+    ctx.fillRect( (2*mouseX)/2, (2*lastMouseY)/2, PIXEL_SIZE, PIXEL_SIZE );
     ctx.closePath();
     save(Math.round(mouseX/PIXEL_SIZE), Math.round(mouseY/10), color);
 }
@@ -102,7 +107,7 @@ function load(){
 initServerCanvas();
 
 //LOAD IMAGE FROM SERVER
-let serverImage = [];
+let serverImage = [{x: 0, y: 0, color: "#000000"}, {x: 72, y: 23, color: "#000000"}, {x: 72, y: 23, color: "#000000"}, {x: 71, y: 23, color: "#000000"}, {x: 71, y: 23, color: "#000000"}, {x: 70, y: 23, color: "#000000"}, {x: 69, y: 23, color: "#000000"}, {x: 69, y: 23, color: "#000000"}, {x: 68, y: 23, color: "#000000"}, {x: 68, y: 23, color: "#000000"}];
 
 function loadServer(){
     for (let i = 0; i < serverImage.length; i++){
@@ -112,4 +117,6 @@ function loadServer(){
         serverCtx.closePath();
     }
 }
+
+loadServer();
 
