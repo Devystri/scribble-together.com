@@ -1,16 +1,14 @@
 /* VAriables colors */
 :root{
     --black: #000000;
-    --red: #470000;
-    --orange: #471B00;
-    --lightOrange: #472700;
-    --darkYellow: #463700;
-    --yellow: #464700;
-    --lightGreen: #304700;
-    --green: #014700;
-    --lightBlue: #003947;
-    --blue: #002447;
-    --darkBlue: #000347;
-    --purpule: #2A0047;
-    --pink: #47002C;
+    --red: #ff0000;
+    --orange: #ffa500;
+    --yellow: #ffff00;
+    --lightGreen: #9acd32;
+    --green: #00ff00;
+    --lightBlue: #00ffff;
+    --blue: #00a5ff;
+    --darkPurpule: #0000a0;
+    --purpule: #800080;
+    --pink: #ff00ff;
 }
