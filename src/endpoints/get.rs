@@ -2,7 +2,7 @@ use crate::chunk::{self, Chunk};
 use actix_web::{get, HttpRequest, HttpResponse, Result};
 use csv::Terminator;
 
-#[get("/tile/get/{adress}")]
+#[get("/tile/get/{adress:.*}")]
 async fn index(req: HttpRequest) -> Result<HttpResponse> {
     let adress = req.match_info().get("adress").unwrap();
     let map = chunk::MAP.lock();
@@ -11,7 +11,7 @@ async fn index(req: HttpRequest) -> Result<HttpResponse> {
         Err(_) => return Ok(HttpResponse::InternalServerError().finish()),
     };
 
-    let chunk = match map.get_chunk(&String::from(adress)) {
+    let chunk = match map.get_chunk(&format!("./{}", adress)) {
         Ok(chunk) => chunk,
         Err(e) => {
             println!("{:?}", e);

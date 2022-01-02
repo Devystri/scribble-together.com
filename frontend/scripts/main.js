@@ -136,7 +136,7 @@ initServerCanvas();
 let serverImage = [];
 
 function loadServer(){
-    csv_pixels = client.download_pixels("0").split('\r\n');
+    csv_pixels = client.download_pixels("map/0").split('\r\n');
     for (pixel of csv_pixels){
         parameters =  pixel.split(';')
         if(parameters.length != 3){

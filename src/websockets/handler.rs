@@ -1,6 +1,6 @@
 use std::time::{Duration, Instant};
 
-use crate::chunk::{self, Pixel};
+use crate::{chunk::{self, Pixel}, common::is_numeric};
 use actix::{Actor, ActorContext, AsyncContext, StreamHandler};
 use actix_web::{
     web::{self},
@@ -13,6 +13,8 @@ use serde_json;
 use self::errors::HandleRequestError;
 struct WebSocketServer {
     hb: Instant,
+    chunks_adress: [String; 9],
+    id: usize,
 }
 /// How often heartbeat pings are sent
 const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(5);
@@ -28,6 +30,7 @@ impl Actor for WebSocketServer {
 impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WebSocketServer {
     fn handle(&mut self, msg: Result<ws::Message, ws::ProtocolError>, ctx: &mut Self::Context) {
         // process websocket messages
+
         match msg {
             Ok(ws::Message::Ping(msg)) => {
                 self.hb = Instant::now();
@@ -36,15 +39,51 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WebSocketServer {
             Ok(ws::Message::Pong(_)) => {
                 self.hb = Instant::now();
             }
-            Ok(ws::Message::Text(text)) => match self.handle_request(&text.to_string()) {
-                Ok(_) => (),
-                Err(e) => println!("{:?}", e),
+            Ok(ws::Message::Text(text)) => 
+            {
+                let data = text.to_string();
+                if data.starts_with('/') {
+                    let v: Vec<&str> = data.splitn(2, ' ').collect();
+                    match v[0] {
+                        "/send" =>{
+                            match self.handle_request(v[1]) {
+                                Ok(_) => (),
+                                Err(e) => println!("{:?}", e),
+                            }
+                        },
+                        "/register" =>{
+                            let load_adress = v[1].to_string().trim().to_lowercase();
+                            // Adress layout: root/x/y
+                            let mut settings = load_adress.split('/');
+                            let n: usize = settings.clone().count();
+                            if !(3..=16).contains(&n)  || settings.any(|v| !is_numeric(v)) {
+                                println!("Invalid adress");
+                                return;
+                            }
+                        
+                            let x = settings.nth(n-2).unwrap().parse::<usize>().unwrap();
+                            let y = settings.nth(n-1).unwrap().parse::<usize>().unwrap();
+                            self.chunks_adress[0] = load_adress;
+                            self.chunks_adress[1] = format!("{}/{}", x + 1, y);
+                            self.chunks_adress[2] = format!("{}/{}", x + 1, y + 1);
+                            self.chunks_adress[3] = format!("{}/{}", x, y + 1);
+                            self.chunks_adress[4] = format!("{}/{}", x - 1, y + 1);
+                            self.chunks_adress[5] = format!("{}/{}", x - 1, y);
+                            self.chunks_adress[6] = format!("{}/{}", x - 1, y - 1);
+                            self.chunks_adress[7] = format!("{}/{}", x, y - 1);
+                            self.chunks_adress[8] = format!("{}/{}", x + 1, y - 1);
+
+                        },
+                        _ => (),
+                    }
+                }
+                
             },
             Ok(ws::Message::Binary(bin)) => ctx.binary(bin),
             Ok(ws::Message::Close(reason)) => {
                 ctx.close(reason);
                 ctx.stop();
-            }
+            },
             _ => ctx.stop(),
         }
     }
@@ -52,7 +91,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WebSocketServer {
 
 impl WebSocketServer {
     fn new() -> Self {
-        Self { hb: Instant::now() }
+        Self { hb: Instant::now(), id: 0, chunks_adress: [(); 9].map(|_| String::new()) }
     }
     fn hb(&self, ctx: &mut <Self as Actor>::Context) {
         ctx.run_interval(HEARTBEAT_INTERVAL, |act, ctx| {
@@ -73,7 +112,7 @@ impl WebSocketServer {
     }
 
     fn handle_request(&self, message: &str) -> Result<(), HandleRequestError> {
-        //TODO error handling
+                
         let pixel: Vec<Pixel> = match serde_json::from_str(message) {
             Ok(pixel) => pixel,
             Err(e) => {
