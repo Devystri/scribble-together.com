@@ -95,12 +95,15 @@ function init(){
 
 init();
 
+// To send
+buffer = [];
+
 //SAVE IMAGE
 let image = [];
 
 function save(x, y, color){
     var pixel = {x: x, y: y, color: color};
-    client.send_update(pixel)
+    client.add_in_buffer(pixel);
     let newLength = image.push(pixel);
 }
 
@@ -155,7 +158,6 @@ function loadServer(){
     }
 }
 client.init_client();
-
 loadServer();
 
 // Disable the contextual menu

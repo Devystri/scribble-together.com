@@ -81,17 +81,19 @@ impl Chunk {
         }
     }
 
-    pub fn add_pixel(&mut self, pixel: &Pixel, adress: &str) -> Result<(), AddError> {
+    pub fn add_pixel(&mut self, pixels_adds: &Vec<Pixel>, adress: &str) -> Result<(), AddError> {
         match self {
             Chunk::Container { id: _, childrens } => {
                 for child in childrens.iter_mut() {
-                    child.add_pixel(&pixel, adress)?;
+                    child.add_pixel(&pixels_adds, adress)?;
                 }
                 Ok(())
             }
             Chunk::Leaf { id: _, pixels } => {
-                println!("{:?}", pixel.clone());
-                pixels.push((*pixel).clone());
+                println!("{:?}", pixels_adds.clone());
+                for  pixel in pixels_adds.iter() {
+                    pixels.push((*pixel).clone());
+                }
                 Ok(())
             }
         }

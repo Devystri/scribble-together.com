@@ -74,7 +74,7 @@ impl WebSocketServer {
 
     fn handle_request(&self, message: &str) -> Result<(), HandleRequestError> {
         //TODO error handling
-        let pixel: Pixel = match serde_json::from_str(message) {
+        let pixel: Vec<Pixel> = match serde_json::from_str(message) {
             Ok(pixel) => pixel,
             Err(e) => {
                 println!("{:?}", e);
