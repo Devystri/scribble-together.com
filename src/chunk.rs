@@ -1,5 +1,6 @@
 
-use std::{fs::File};
+use std::{fs::File, io::BufWriter};
+use flate2::{write::ZlibEncoder, Compression};
 use serde::{Serialize, Deserialize};
 use bincode;
 use once_cell::sync::Lazy; 
@@ -70,14 +71,14 @@ impl Chunk {
                 Ok(())
             },
             Chunk::Leaf { id, pixels } => {
-                let file = File::create("".to_owned() +  &id.to_string() + ".bin");
-
-                let file = match file {
+                let file = match File::create("".to_owned() +  &id.to_string() + ".bin.gz") {
                     Ok(file) => file,
                     Err(e) => return Err(SaveError::Io(e)),
                 };
+                let writer = BufWriter::new(file);
+                let encoder = ZlibEncoder::new(writer, Compression::fast());
                 
-                match bincode::serialize_into(&file, pixels) {
+                match bincode::serialize_into(encoder, pixels) {
                     Ok(_) =>   Ok(()),
                     Err(e) => Err(SaveError::Bincode(e)),
                 }
