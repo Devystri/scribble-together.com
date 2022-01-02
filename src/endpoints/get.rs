@@ -26,7 +26,10 @@ async fn index(req: HttpRequest) -> Result<HttpResponse> {
     if let Chunk::Leaf {id:_ , pixels } = chunk  {
         let mut wtr = csv::WriterBuilder::new().delimiter(b';').has_headers(false).terminator( Terminator::CRLF).from_writer(vec![]);
         for pixel in pixels{
-            match wtr.write_record(&[pixel.x.to_string(), pixel.y.to_string(), pixel.color]){
+            if pixel.color < 0  {
+                continue;
+            }
+            match wtr.write_record(&[pixel.x.to_string(), pixel.y.to_string(), pixel.color.to_string()]){
                 Ok(_) => (),
                 Err(e) => {
                     println!("{:?}", e);

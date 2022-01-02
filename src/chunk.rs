@@ -40,7 +40,7 @@ impl Chunk{
 pub struct Pixel{
     pub x: u8,
     pub y: u8,
-    pub color: String,
+    pub color: i8,
 }
 
 impl Pixel{
@@ -48,7 +48,7 @@ impl Pixel{
         Self{
             x: 0,
             y: 0,
-            color: String::new(),
+            color: -1,
         }
     }
 }
@@ -69,7 +69,7 @@ impl Chunk {
                 }
                 Ok(())
             },
-            Chunk::Leaf { id, pixels: _ } => {
+            Chunk::Leaf { id, pixels } => {
                 let file = File::create("".to_owned() +  &id.to_string() + ".bin");
 
                 let file = match file {
@@ -77,7 +77,7 @@ impl Chunk {
                     Err(e) => return Err(SaveError::Io(e)),
                 };
                 
-                match bincode::serialize_into(&file, &self) {
+                match bincode::serialize_into(&file, pixels) {
                     Ok(_) =>   Ok(()),
                     Err(e) => Err(SaveError::Bincode(e)),
                 }

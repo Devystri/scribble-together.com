@@ -2,7 +2,8 @@
 
 //store colors in an array
 var colors = { "black": "#000000", "red": "#ff0000", "orange": "#ffa500", "yellow": "#FFFF00", "lightGreen": "#9acd32", "green": "#00ff00", "lightBlue": "#00ffff", "blue": "#00a5ff", "darkPurpule": "#0000a0", "purpule": "#800080", "pink": "#ff00ff"};
-console.log(colors);
+var colors_indexes_by_hex = {"#000000": 0, "#ff0000": 1, "#ffa500": 2, "#FFFF00": 3, "#9acd32": 4, "#00ff00": 5, "#00ffff": 6, "#00a5ff": 7, "#0000a0": 8, "#800080": 9, "#ff00ff": 10, "#FFFFFF": 11};
+var colors_hex_by_index = {0: "#000000", 1: "#ff0000", 2: "#ffa500", 3: "#FFFF00", 4: "#9acd32", 5: "#00ff00", 6: "#00ffff", 7: "#00a5ff", 8: "#0000a0", 9: "#800080", 10: "#ff00ff", 11: "#FFFFFF"};
 for (key in colors){
     //Create a li 
     //Add the color to the li
@@ -47,7 +48,7 @@ function draw(){
     ctx.fillStyle = color;
     ctx.fillRect( mouseX, mouseY, PIXEL_SIZE, PIXEL_SIZE );
     ctx.closePath();
-    save(Math.round(mouseX/PIXEL_SIZE), Math.round(mouseY/PIXEL_SIZE), color);
+    save(Math.round(mouseX/PIXEL_SIZE), Math.round(mouseY/PIXEL_SIZE), colors_indexes_by_hex[color]);
 }
 
 function moveMouse(e){
@@ -58,15 +59,15 @@ function moveMouse(e){
         var drawed = false;
         for( i = 0; i < serverImage.length; i++) {
             if(Math.round(mouseX/PIXEL_SIZE) == serverImage[i].x && Math.round(mouseY/PIXEL_SIZE) == serverImage[i].y){
-                drawed =  true;
+                drawed = true;
                 break;
             }
-            //if it is the same color
              
         }
+        var target_color = colors_indexes_by_hex[color]
         for(i = 0; i < image.length; i++){
             var pixel = image[i];
-            if(pixel.color == color && Math.round(mouseX/PIXEL_SIZE) == pixel.x && Math.round(mouseY/PIXEL_SIZE) == pixel.y){
+            if(pixel.color == target_color && Math.round(mouseX/PIXEL_SIZE) == pixel.x && Math.round(mouseY/PIXEL_SIZE) == pixel.y){
                 drawed = true;
                 break;
             }
@@ -99,7 +100,6 @@ let image = [];
 
 function save(x, y, color){
     var pixel = {x: x, y: y, color: color};
-
     client.send_update(pixel)
     let newLength = image.push(pixel);
 }
@@ -141,7 +141,10 @@ function loadServer(){
         }
         x = parseInt(parameters[0]);
         y = parseInt(parameters[1]);
-        color = parameters[2];
+        color =  colors_hex_by_index[parseInt(parameters[2])];
+        if (color == -1){
+            continue;
+        }
         serverImage.push({x: x, y: y, color: color});
     }
     for (let i = 0; i < serverImage.length; i++){

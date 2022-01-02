@@ -6,6 +6,8 @@ use actix_web_actors::ws;
 use crate::chunk::{self, Pixel};
 
 use serde_json;
+
+use self::errors::HandleRequestError;
 struct WebSocketServer{
     hb: Instant,
 
@@ -36,7 +38,10 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WebSocketServer {
             Ok(ws::Message::Pong(_)) => {
                 self.hb = Instant::now();
             }
-            Ok(ws::Message::Text(text)) => self.handle_request( &text.to_string()),
+            Ok(ws::Message::Text(text)) => match self.handle_request( &text.to_string()){
+                Ok(_) => (),
+                Err(e) => println!("{:?}", e),
+            },
             Ok(ws::Message::Binary(bin)) => ctx.binary(bin),
             Ok(ws::Message::Close(reason)) => {
                 ctx.close(reason);
@@ -69,7 +74,7 @@ impl WebSocketServer{
         });
     }
 
-    fn handle_request(&self, message: &str)  {
+    fn handle_request(&self, message: &str) -> Result<(), HandleRequestError > {
         //TODO error handling
         let pixel: Pixel = serde_json::from_str(message).unwrap();
         let mut map = chunk::MAP.lock().unwrap();
@@ -82,7 +87,7 @@ impl WebSocketServer{
             Err(e) => println!("{:?}", e),
         }
         println!("{}", message);
-        
+        Ok(())
     }
 }
 
@@ -97,6 +102,7 @@ pub async fn index(req: HttpRequest, stream: web::Payload) -> Result<HttpRespons
 mod errors{
     use super::*;
 
+    #[derive(Debug)]
     pub enum HandleRequestError{
         ImpossibleToHandle
     } 
