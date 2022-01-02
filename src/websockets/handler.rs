@@ -1,16 +1,18 @@
-use std::{time::{Duration, Instant}};
+use std::time::{Duration, Instant};
 
-use actix::{Actor, StreamHandler, AsyncContext, ActorContext};
-use actix_web::{get, web::{self, block}, App, HttpRequest, HttpServer, Responder, Error, HttpResponse };
-use actix_web_actors::ws;
 use crate::chunk::{self, Pixel};
+use actix::{Actor, ActorContext, AsyncContext, StreamHandler};
+use actix_web::{
+    web::{self},
+    Error, HttpRequest, HttpResponse,
+};
+use actix_web_actors::ws;
 
 use serde_json;
 
 use self::errors::HandleRequestError;
-struct WebSocketServer{
+struct WebSocketServer {
     hb: Instant,
-
 }
 /// How often heartbeat pings are sent
 const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(5);
@@ -24,11 +26,7 @@ impl Actor for WebSocketServer {
 }
 
 impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WebSocketServer {
-    fn handle(
-        &mut self,
-        msg: Result<ws::Message, ws::ProtocolError>,
-        ctx: &mut Self::Context,
-    ) {
+    fn handle(&mut self, msg: Result<ws::Message, ws::ProtocolError>, ctx: &mut Self::Context) {
         // process websocket messages
         match msg {
             Ok(ws::Message::Ping(msg)) => {
@@ -38,7 +36,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WebSocketServer {
             Ok(ws::Message::Pong(_)) => {
                 self.hb = Instant::now();
             }
-            Ok(ws::Message::Text(text)) => match self.handle_request( &text.to_string()){
+            Ok(ws::Message::Text(text)) => match self.handle_request(&text.to_string()) {
                 Ok(_) => (),
                 Err(e) => println!("{:?}", e),
             },
@@ -52,7 +50,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WebSocketServer {
     }
 }
 
-impl WebSocketServer{
+impl WebSocketServer {
     fn new() -> Self {
         Self { hb: Instant::now() }
     }
@@ -74,38 +72,50 @@ impl WebSocketServer{
         });
     }
 
-    fn handle_request(&self, message: &str) -> Result<(), HandleRequestError > {
+    fn handle_request(&self, message: &str) -> Result<(), HandleRequestError> {
         //TODO error handling
-        let pixel: Pixel = serde_json::from_str(message).unwrap();
-        let mut map = chunk::MAP.lock().unwrap();
+        let pixel: Pixel = match serde_json::from_str(message) {
+            Ok(pixel) => pixel,
+            Err(e) => {
+                println!("{:?}", e);
+                return Err(HandleRequestError::ImpossibleToHandle);
+            }
+        };
+
+        let mut map = match chunk::MAP.lock() {
+            Ok(map) => map,
+            Err(e) => {
+                println!("{:?}", e);
+                return Err(HandleRequestError::ImpossibleToHandle);
+            }
+        };
+
         match map.add_pixel(&pixel, "") {
-            Ok(_) => {},
+            Ok(_) => {}
             Err(e) => println!("{:?}", e),
         }
-        match map.save(){
-            Ok(_) => {},
-            Err(e) => println!("{:?}", e),
+        match map.save() {
+            Ok(_) => {}
+            Err(e) => {
+                println!("{:?}", e);
+            }
         }
         println!("{}", message);
         Ok(())
     }
 }
 
-
 pub async fn index(req: HttpRequest, stream: web::Payload) -> Result<HttpResponse, Error> {
-    let resp= ws::start(WebSocketServer::new(), &req, stream);
+    let resp = ws::start(WebSocketServer::new(), &req, stream);
 
     println!("{:?}", resp);
     resp
 }
 
-mod errors{
-    use super::*;
+mod errors {
 
     #[derive(Debug)]
-    pub enum HandleRequestError{
-        ImpossibleToHandle
-    } 
-        
-    
+    pub enum HandleRequestError {
+        ImpossibleToHandle,
+    }
 }

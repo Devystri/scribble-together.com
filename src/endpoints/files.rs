@@ -1,7 +1,7 @@
-use std::path::PathBuf;
 use actix_files::NamedFile;
+use std::path::PathBuf;
 
-use actix_web::{get, web, App, HttpRequest, HttpServer, Responder, Error};
+use actix_web::{get, Error, HttpRequest};
 
 /// Served files must be placed under a `files` directory located beside the server program.  
 /// The file `files/index.html` will be served at the root.  
