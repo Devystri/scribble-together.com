@@ -6,6 +6,8 @@ use std::fs::{OpenOptions, self};
 use std::sync::Mutex;
 use std::{fs::File, io::BufWriter};
 
+pub const SIZE: usize = 256;
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(tag = "type")]
 pub enum Chunk {
@@ -17,7 +19,7 @@ pub enum Chunk {
     Leaf {
         #[serde(skip)]
         id: String,
-        pixels: Vec<Pixel>,
+        pixels: Vec<Vec<Pixel>>,
     },
 }
 
@@ -30,7 +32,7 @@ impl Chunk {
     }
 
     pub fn new_leaf(parent_adress: &str, parent_length: u32) -> Option<Self> {
-        match fs::create_dir_all(format!("./{}",parent_adress)){
+        match fs::create_dir_all(format!("./{}", parent_adress)){
             Ok(_) => (),
             Err(e) => {
                 println!("{:?}", e);
@@ -38,40 +40,34 @@ impl Chunk {
             }
         }
         let id = format!("./{}/{}", parent_adress, parent_length);
-        match File::create(format!("{}.chunk.gz", id)){
-            Ok(_) => {
-                let leaf = Self::Leaf {
-                    id,
-                    pixels: vec![],
-                };
-                match leaf.save(){
-                    Ok(_) => (),
-                    Err(e) => {
-                        println!("{:?} 2", e);
-                        return None;
-                    }
-                }
-                Some(leaf)
-            }
+        let leaf = Self::Leaf {
+            id,
+            pixels: vec![vec![Pixel::default(); SIZE]; SIZE],
+        };
+        match leaf.save(){
+            Ok(_) => (),
             Err(e) => {
-                println!("{:?}", e);
-                None
+                println!("{:?} 2", e);
+                return None;
             }
         }
+        Some(leaf)
         
         
     }
 }
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Pixel {
-    pub x: u8,
-    pub y: u8,
     pub color: i8,
+    #[serde(skip_serializing)]
+    pub x: u8,
+    #[serde(skip_serializing)]
+    pub y: u8,
 }
 
 impl Default for Pixel {
     fn default() -> Self {
-        Self { x: Default::default(), y: Default::default(), color: Default::default() }
+        Self { color: -1, x: 0, y: 0 }
     }
 }
 
@@ -89,16 +85,12 @@ impl Chunk {
                 Ok(())
             }
             Chunk::Leaf { id, pixels } => {
-                let file = match OpenOptions::new()
-                    .write(true)
-                    .append(true)
-                    .open("".to_owned() + id + ".chunk.gz") {
+                let file = match OpenOptions::new().write(true).create(true).truncate(true).open("".to_owned() + id + ".chunk.gz") {
                     Ok(file) => file,
                     Err(e) => return Err(SaveError::Io(e)),
                 };
                 let writer = BufWriter::new(file);
                 let encoder = ZlibEncoder::new(writer, Compression::fast());
-
                 match bincode::serialize_into(encoder, pixels) {
                     Ok(_) => Ok(()),
                     Err(e) => Err(SaveError::Bincode(e)),
@@ -116,9 +108,9 @@ impl Chunk {
                 Ok(())
             }
             Chunk::Leaf { id: _, pixels } => {
-                println!("{:?}", pixels_adds);
                 for pixel in pixels_adds.iter() {
-                    pixels.push((*pixel).clone());
+                    pixels[pixel.x as usize][pixel.y as usize].color = pixel.color;
+                    
                 }
                 Ok(())
             }
