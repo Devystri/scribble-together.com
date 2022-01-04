@@ -78,3 +78,13 @@ li{
     margin: 5px;
     user-select: none;
 }
+
+/* shadesColors */
+
+.shades-colors{
+    display: flex;
+    background-color: red;
+    position: absolute;
+    right: 55px;
+}
+

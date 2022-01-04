@@ -1,16 +1,26 @@
 //COLORS
 
 //store colors in an array
-var colors = { "black": "#000000", "red": "#ff0000", "orange": "#ffa500", "yellow": "#FFFF00", "lightGreen": "#9acd32", "green": "#00ff00", "lightBlue": "#00ffff", "blue": "#00a5ff", "darkPurpule": "#0000a0", "purpule": "#800080", "pink": "#ff00ff"};
+var colors = { "black": "rgb(0, 0, 0)", "red": "rgb(255, 0, 0)", "orange": "rgb(255, 165, 0)", "yellow": "rgb(255, 255, 0)", "lightGreen": "rgb(154, 205, 50)", "green": "rgb(0, 255, 0)", "lightBlue": "rgb(0, 255, 255)", "blue": "rgb(0, 165, 255)", "darkPurpule": "rgb(0, 0, 160)", "purpule": "rgb(128, 0, 128)", "pink": "rgb(255, 0, 255)"};
 var colors_indexes_by_hex = {"#000000": 0, "#ff0000": 1, "#ffa500": 2, "#FFFF00": 3, "#9acd32": 4, "#00ff00": 5, "#00ffff": 6, "#00a5ff": 7, "#0000a0": 8, "#800080": 9, "#ff00ff": 10, "#FFFFFF": 11};
 var colors_hex_by_index = {0: "#000000", 1: "#ff0000", 2: "#ffa500", 3: "#FFFF00", 4: "#9acd32", 5: "#00ff00", 6: "#00ffff", 7: "#00a5ff", 8: "#0000a0", 9: "#800080", 10: "#ff00ff", 11: "#FFFFFF"};
+
 for (key in colors){
     //Create a li 
     //Add the color to the li
     document.getElementById('colors-id').innerHTML += "<li class='color-element' style='background-color:" + colors[key] + "'>" + key + "</li>";
 }
 
-var color = "#000000";
+//Generate Different Shades of the Same Color
+function generateShades(colorClicked){
+    //Create a shades-colors class div in the colors-id element of id
+    document.getElementById('colors-id').innerHTML += "<div class='shades-colors'></div>";
+    colorRGB = colorClicked.replace('rgb(', '').replace(')', '').split(',');
+    alert(colorRGB);
+}
+
+
+var color = "rgb(0, 0, 0)";
 
 //CANVAS
 
@@ -23,10 +33,13 @@ var canvas, ctx, canvasWidth, canvasHeight, mouseX, mouseY, lastMouseX, lastMous
 document.addEventListener('click', function(e) {
     e = e || window.event;
     var target = e.target;
-    if (target.className == "color-element"){
-        color_name = target.textContent;
+    color_name = target.textContent;
+    if (target.className == 'color-element' && color == colors[color_name]){
+        generateShades(colors[color_name]);
+    }
+    else if (target.className == "color-element"){
         color = colors[color_name];
-        }
+    }
 }, false);
 
 window.addEventListener("resize", function(e){
