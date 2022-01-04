@@ -28,7 +28,7 @@ class Client{
 
         function send_update(){
             if(self.socket.readyState){
-                self.socket.send(JSON.stringify(self.buffer));
+                self.socket.send("/send " + JSON.stringify(self.buffer));
             }
     
         }

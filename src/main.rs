@@ -1,6 +1,7 @@
 pub mod chunk;
 pub mod endpoints;
 pub mod websockets;
+pub mod common;
 
 use actix_web::{web, App, HttpServer};
 
