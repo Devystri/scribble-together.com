@@ -1,3 +1,4 @@
+
 use bincode;
 use flate2::{write::ZlibEncoder, Compression};
 use once_cell::sync::Lazy;
@@ -27,11 +28,11 @@ impl Chunk {
     pub fn new_root() -> Self {
         Self::Container {
             id: String::from("map"),
-            childrens: vec![Self::new_leaf("map", 0).unwrap()],
+            childrens: vec![Self::new_leaf("map", (0, 0)).unwrap()],
         }
     }
 
-    pub fn new_leaf(parent_adress: &str, parent_length: u32) -> Option<Self> {
+    pub fn new_leaf(parent_adress: &str, coords: (usize, usize)) -> Option<Self> {
         match fs::create_dir_all(format!("./{}", parent_adress)){
             Ok(_) => (),
             Err(e) => {
@@ -39,7 +40,7 @@ impl Chunk {
                 return None;
             }
         }
-        let id = format!("./{}/{}", parent_adress, parent_length);
+        let id = format!("./{}/{}_{}", parent_adress, coords.0, coords.1);
         let leaf = Self::Leaf {
             id,
             pixels: vec![vec![Pixel::default(); SIZE]; SIZE],
@@ -56,6 +57,8 @@ impl Chunk {
         
     }
 }
+
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Pixel {
     pub color: i8,
@@ -71,9 +74,46 @@ impl Default for Pixel {
     }
 }
 
-pub(crate) static MAP: Lazy<Mutex<Chunk>> = Lazy::new(|| Mutex::new(Chunk::new_root()));
+impl Pixel {
+    pub fn from_string(txt: &str)-> Option<Self> {
+        // pixel format: xxxyyycolorcolorcolor
+        // xxx: x coordinate
+        // yyy: y coordinate
+        // colorcolorxolor: color
+        if txt.len() != 9 {
+            println!("{} not is of a length of 9", txt);
+            return  None;
+        }
+        let x = match txt[0..3].parse::<u8>() {
+            Ok(x) => x,
+            Err(e) => {
+                println!("{:?}", e);
+                return None;
+            }
+        };
+        let y = match txt[3..6].parse::<u8>() {
+            Ok(y) => y,
+            Err(e) => {
+                println!("{:?}", e);
+                return None;
+            }
+        };
+        let color = match txt[6..9].parse::<i8>() {
+            Ok(color) => color,
+            Err(e) => {
+                println!("{:?}", e);
+                return None;
+            }
+        };
 
+        Some(Self { color, x, y })
+    }
+}
+
+
+pub(crate) static MAP: Lazy<Mutex<Chunk>> = Lazy::new(|| Mutex::new(Chunk::new_root()));
 use errors::*;
+
 
 impl Chunk {
     pub fn save(&self) -> Result<(), SaveError> {
@@ -97,6 +137,7 @@ impl Chunk {
                 }
             }
         }
+
     }
 
     pub fn add_pixel(&mut self, pixels_adds: &[Pixel], adress: &str) -> Result<(), AddError> {
@@ -143,6 +184,60 @@ impl Chunk {
             }
         }
     }
+
+    pub fn from_string(txt: &str) -> Vec<Pixel> {
+        let mut pixels = Vec::new();
+        let mut pixel = Pixel::default();
+        let mut line= String::new();
+        let mut param_index = 0; 
+        for c in txt.chars() {
+            if c == '\n' {
+                if line.len() != 9 {
+                    pixels.pop();
+                    println!("len: {}", line.len());
+                }
+                pixels.push(pixel);
+                pixel = Pixel::default();
+                line.clear();
+                param_index = 0;
+                continue;
+            }else{
+                if c.is_numeric() || c == '-' {
+                    line.push(c);
+                }
+                if !line.is_empty() && line.len() % 3 == 0 {
+                    if param_index == 2 && line.len() >= 9 {
+                        match line[6..9].parse::<i8>() {
+                            
+                            Ok(v) => {
+                                pixel.color = v;
+                            },
+                            Err(e) => {
+                                println!("No parse: {:?}", e);
+                            }
+                        };
+                    }else{
+                        match line[param_index*3..(param_index+1)*3].parse::<u8>() {
+                            Ok(v) => {
+                                match param_index {
+                                    0 => pixel.x = v,
+                                    1 => pixel.y = v,
+                                    _ => ()
+                                }
+                                    
+                            },
+                            Err(e) => {
+                                println!("No parse: {:?}", e);
+                            }
+                        };
+                    }
+                    param_index += 1;
+                }
+            }
+        }
+
+        pixels
+    }
 }
 pub mod errors {
     use super::*;
@@ -162,3 +257,59 @@ pub mod errors {
         NotAdress,
     }
 }
+
+#[cfg(test)]
+mod test{
+    use super::*;
+    // Test str to pixel
+    #[test]
+    fn test_str_to_pixel() {
+        let pixel = Pixel::from_string("001001-01");
+        match pixel {
+            Some(pixel) => {
+                assert_eq!(pixel.x, 1);
+                assert_eq!(pixel.y, 1);
+                assert_eq!(pixel.color, -1);
+            }
+            None => panic!("pixel is None"),
+        }
+       // wrog length
+        let pixel = Pixel::from_string("00100010101010101");
+        assert!(pixel.is_none());
+
+        // max than 1 Byte
+        let pixel = Pixel::from_string("257-01000");
+        assert!(pixel.is_none());
+
+    }
+    #[test]
+    fn test_str_to_pixel_vec(){
+        let pixels = Chunk::from_string("003000000\n");
+        assert_eq!(pixels.len(), 1);
+        println!("{:?}", pixels);
+        assert!(pixels[0].x == 3);
+        assert!(pixels[0].y == 0);
+        assert!(pixels[0].color == 0);
+        let pixels = Chunk::from_string("003020-20\n");
+        assert_eq!(pixels.len(), 1);
+        println!("{:?}", pixels);
+        assert!(pixels[0].x == 3);
+        assert!(pixels[0].y == 20);
+        assert!(pixels[0].color == -20);
+
+        // u8 oversize
+        let pixels = Chunk::from_string("000380-25\n");
+        assert_eq!(pixels.len(), 1);
+
+        let pixelsize = Chunk::from_string("0000000380-925\n");
+        assert_eq!(pixelsize.len(), 0);
+
+
+
+    }
+
+  
+}
+
+
+

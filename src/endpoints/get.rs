@@ -11,7 +11,6 @@ async fn index(req: HttpRequest) -> Result<HttpResponse> {
         Ok(map) => map,
         Err(_) => return Ok(HttpResponse::InternalServerError().finish()),
     };
-    println!("{:?}", adress);
     let chunk = match map.get_chunk(&format!("./{}", adress)) {
         Ok(chunk) => chunk,
         Err(e) => {

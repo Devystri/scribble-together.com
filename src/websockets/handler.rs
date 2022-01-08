@@ -1,20 +1,20 @@
-use std::time::{Duration, Instant};
+use std::{time::{Duration, Instant}};
 
-use crate::{chunk::{self, Pixel}, common::is_numeric};
-use actix::{Actor, ActorContext, AsyncContext, StreamHandler};
+use crate::{chunk::{self, Pixel}};
+use actix::{Actor, ActorContext, AsyncContext, StreamHandler, Addr};
 use actix_web::{
     web::{self},
     Error, HttpRequest, HttpResponse,
 };
 use actix_web_actors::ws;
 
-use serde_json;
 
 use self::errors::HandleRequestError;
-struct WebSocketServer {
+
+#[derive(Debug)]
+pub struct WebSocketServer {
     hb: Instant,
     chunks_adress: [String; 9],
-    id: usize,
 }
 /// How often heartbeat pings are sent
 const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(5);
@@ -54,24 +54,32 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WebSocketServer {
                         "/register" =>{
                             let load_adress = v[1].to_string().trim().to_lowercase();
                             // Adress layout: root/x/y
-                            let mut settings = load_adress.split('/');
+                            let settings = load_adress.split('/');
                             let n: usize = settings.clone().count();
-                            if !(3..=16).contains(&n)  || settings.any(|v| !is_numeric(v)) {
-                                println!("Invalid adress");
+                            if !(2..=16).contains(&n) {
+                                println!("Invalid adress length");
+                                return;
+                            }
+                            let coords = settings.clone().last().unwrap().split('_').collect::<Vec<&str>>();
+                            if coords.len() != 2 {
+                                println!("Invalid adress format coords must have 2 values");
                                 return;
                             }
                         
-                            let x = settings.nth(n-2).unwrap().parse::<usize>().unwrap();
-                            let y = settings.nth(n-1).unwrap().parse::<usize>().unwrap();
+                            let x = coords[0].parse::<isize>().unwrap();
+                            let y = coords[1].parse::<isize>().unwrap();
+
                             self.chunks_adress[0] = load_adress;
-                            self.chunks_adress[1] = format!("{}/{}", x + 1, y);
-                            self.chunks_adress[2] = format!("{}/{}", x + 1, y + 1);
-                            self.chunks_adress[3] = format!("{}/{}", x, y + 1);
-                            self.chunks_adress[4] = format!("{}/{}", x - 1, y + 1);
-                            self.chunks_adress[5] = format!("{}/{}", x - 1, y);
-                            self.chunks_adress[6] = format!("{}/{}", x - 1, y - 1);
-                            self.chunks_adress[7] = format!("{}/{}", x, y - 1);
-                            self.chunks_adress[8] = format!("{}/{}", x + 1, y - 1);
+                            self.chunks_adress[1] = format!("{}_{}", x + 1, y);
+                            self.chunks_adress[2] = format!("{}_{}", x + 1, y + 1);
+                            self.chunks_adress[3] = format!("{}_{}", x, y + 1);
+                            self.chunks_adress[4] = format!("{}_{}", x - 1, y + 1);
+                            self.chunks_adress[5] = format!("{}_{}", x - 1, y);
+                            self.chunks_adress[6] = format!("{}_{}", x - 1, y - 1);
+                            self.chunks_adress[7] = format!("{}_{}", x, y - 1);
+                            self.chunks_adress[8] = format!("{}_{}", x + 1, y - 1);
+
+
 
                         },
                         _ => (),
@@ -91,7 +99,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WebSocketServer {
 
 impl WebSocketServer {
     fn new() -> Self {
-        Self { hb: Instant::now(), id: 0, chunks_adress: [(); 9].map(|_| String::new()) }
+        Self { hb: Instant::now(), chunks_adress: [(); 9].map(|_| String::new()) }
     }
     fn hb(&self, ctx: &mut <Self as Actor>::Context) {
         ctx.run_interval(HEARTBEAT_INTERVAL, |act, ctx| {
@@ -113,13 +121,7 @@ impl WebSocketServer {
 
     fn handle_request(&self, message: &str) -> Result<(), HandleRequestError> {
                 
-        let pixel: Vec<Pixel> = match serde_json::from_str(message) {
-            Ok(pixel) => pixel,
-            Err(e) => {
-                println!("{:?}", e);
-                return Err(HandleRequestError::ImpossibleToHandle);
-            }
-        };
+        let pixel: Vec<Pixel> = chunk::Chunk::from_string(message);
 
         let mut map = match chunk::MAP.lock() {
             Ok(map) => map,
@@ -144,9 +146,18 @@ impl WebSocketServer {
     }
 }
 
+#[derive(Debug)]
+pub struct Session{
+    pub addr: Addr<WebSocketServer>,
+    pub id: usize,
+}
+
+
 pub async fn index(req: HttpRequest, stream: web::Payload) -> Result<HttpResponse, Error> {
     let resp = ws::start(WebSocketServer::new(), &req, stream);
 
+  
+    
     println!("{:?}", resp);
     resp
 }

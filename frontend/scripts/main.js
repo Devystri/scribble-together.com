@@ -52,6 +52,9 @@ window.addEventListener("resize", function(e){
     serverCanvas.height = document.body.clientHeight;
     serverCanvasWidth = serverCanvas.width;
     serverCanvasHeight = serverCanvas.height;
+
+    loadServer();
+    load();
 }, true);
 
 const PIXEL_SIZE = 10;
@@ -61,7 +64,7 @@ function draw(){
     ctx.fillStyle = colors_hex_by_index[color];
     ctx.fillRect( mouseX, mouseY, PIXEL_SIZE, PIXEL_SIZE );
     ctx.closePath();
-    save(Math.round(mouseX/PIXEL_SIZE), Math.round(mouseY/PIXEL_SIZE), colors_indexes_by_hex[color]);
+    save(Math.round(mouseX/PIXEL_SIZE), Math.round(mouseY/PIXEL_SIZE), color);
 }
 
 function moveMouse(e){
@@ -124,7 +127,7 @@ function save(x, y, color){
 function load(){
     for (let i = 0; i < image.length; i++){
         ctx.beginPath();
-        ctx.fillStyle = image[i].colors_hex_by_index[color];
+        ctx.fillStyle = colors_hex_by_index[image[i].color];
         ctx.fillRect(2*(image[i].x*PIXEL_SIZE)/2, (2*image[i].y*PIXEL_SIZE)/2, PIXEL_SIZE, PIXEL_SIZE);
         ctx.closePath();
     }
@@ -149,7 +152,7 @@ initServerCanvas();
 let serverImage = [];
 
 function loadServer(){
-    csv_pixels = client.download_pixels("map/0").split('\r\n');
+    csv_pixels = client.download_pixels("map/0_0").split('\r\n');
     for (pixel of csv_pixels){
         parameters =  pixel.split(';')
         if(parameters.length != 3){
