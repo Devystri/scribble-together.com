@@ -2,8 +2,8 @@
 
 //store colors in an array
 var colors = { "black": "rgb(0, 0, 0)", "red": "rgb(255, 0, 0)", "orange": "rgb(255, 165, 0)", "yellow": "rgb(255, 255, 0)", "lightGreen": "rgb(154, 205, 50)", "green": "rgb(0, 255, 0)", "lightBlue": "rgb(0, 255, 255)", "blue": "rgb(0, 165, 255)", "darkPurpule": "rgb(0, 0, 160)", "purpule": "rgb(128, 0, 128)", "pink": "rgb(255, 0, 255)"};
-var colors_indexes_by_hex = {"#000000": 0, "#ff0000": 1, "#ffa500": 2, "#FFFF00": 3, "#9acd32": 4, "#00ff00": 5, "#00ffff": 6, "#00a5ff": 7, "#0000a0": 8, "#800080": 9, "#ff00ff": 10, "#FFFFFF": 11};
-var colors_hex_by_index = {0: "#000000", 1: "#ff0000", 2: "#ffa500", 3: "#FFFF00", 4: "#9acd32", 5: "#00ff00", 6: "#00ffff", 7: "#00a5ff", 8: "#0000a0", 9: "#800080", 10: "#ff00ff", 11: "#FFFFFF"};
+var colors_indexes_by_hex = {"rgb(0, 0, 0)": 0, "rgb(255, 0, 0)": 1, "rgb(255, 165, 0)": 2, "rgb(255, 255, 0)": 3, "rgb(154, 205, 50)": 4, "rgb(0, 255, 0)": 5, "rgb(0, 255, 255)": 6, "rgb(0, 165, 255)": 7, "rgb(0, 0, 160)": 8, "rgb(128, 0, 128)": 9, "rgb(255, 0, 255)": 10};
+var colors_hex_by_index = {0: "rgb(0, 0, 0)", 1: "rgb(255, 0, 0)", 2: "rgb(255, 165, 0)", 3: "rgb(255, 255, 0)", 4: "rgb(154, 205, 50)", 5: "rgb(0, 255, 0)", 6: "rgb(0, 255, 255)", 7: "rgb(0, 165, 255)", 8: "rgb(0, 0, 160)", 9: "rgb(128, 0, 128)", 10: "rgb(255, 0, 255)"};
 
 for (key in colors){
     //Create a li 
@@ -20,7 +20,7 @@ function generateShades(colorClicked){
 }
 
 
-var color = "rgb(0, 0, 0)";
+var color = colors_indexes_by_hex[1];
 
 //CANVAS
 
@@ -38,7 +38,7 @@ document.addEventListener('click', function(e) {
         generateShades(colors[color_name]);
     }
     else if (target.className == "color-element"){
-        color = colors[color_name];
+        color = colors_indexes_by_hex[colors[color_name]];
     }
 }, false);
 
@@ -58,7 +58,7 @@ const PIXEL_SIZE = 10;
 
 function draw(){
     ctx.beginPath();
-    ctx.fillStyle = color;
+    ctx.fillStyle = colors_hex_by_index[color];
     ctx.fillRect( mouseX, mouseY, PIXEL_SIZE, PIXEL_SIZE );
     ctx.closePath();
     save(Math.round(mouseX/PIXEL_SIZE), Math.round(mouseY/PIXEL_SIZE), colors_indexes_by_hex[color]);
@@ -124,7 +124,7 @@ function save(x, y, color){
 function load(){
     for (let i = 0; i < image.length; i++){
         ctx.beginPath();
-        ctx.fillStyle = image[i].color;
+        ctx.fillStyle = image[i].colors_hex_by_index[color];
         ctx.fillRect(2*(image[i].x*PIXEL_SIZE)/2, (2*image[i].y*PIXEL_SIZE)/2, PIXEL_SIZE, PIXEL_SIZE);
         ctx.closePath();
     }
