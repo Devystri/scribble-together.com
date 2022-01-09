@@ -1,7 +1,7 @@
 //COLORS
 
 //store colors in an array
-var colors = { "black": "rgb(0, 0, 0)", "red": "rgb(255, 0, 0)", "orange": "rgb(255, 165, 0)", "yellow": "rgb(255, 255, 0)", "lightGreen": "rgb(154, 205, 50)", "green": "rgb(0, 255, 0)", "lightBlue": "rgb(0, 255, 255)", "blue": "rgb(0, 165, 255)", "darkPurpule": "rgb(0, 0, 160)", "purpule": "rgb(128, 0, 128)", "pink": "rgb(255, 0, 255)"};
+var colors = {  "black": "rgb(0, 0, 0)", "red": "rgb(255, 0, 0)", "orange": "rgb(255, 165, 0)", "yellow": "rgb(255, 255, 0)", "lightGreen": "rgb(154, 205, 50)", "green": "rgb(0, 255, 0)", "lightBlue": "rgb(0, 255, 255)", "blue": "rgb(0, 165, 255)", "darkPurpule": "rgb(0, 0, 160)", "purpule": "rgb(128, 0, 128)", "pink": "rgb(255, 0, 255)"};
 var colors_indexes_by_hex = {"rgb(0, 0, 0)": 0, "rgb(255, 0, 0)": 1, "rgb(255, 165, 0)": 2, "rgb(255, 255, 0)": 3, "rgb(154, 205, 50)": 4, "rgb(0, 255, 0)": 5, "rgb(0, 255, 255)": 6, "rgb(0, 165, 255)": 7, "rgb(0, 0, 160)": 8, "rgb(128, 0, 128)": 9, "rgb(255, 0, 255)": 10};
 var colors_hex_by_index = {0: "rgb(0, 0, 0)", 1: "rgb(255, 0, 0)", 2: "rgb(255, 165, 0)", 3: "rgb(255, 255, 0)", 4: "rgb(154, 205, 50)", 5: "rgb(0, 255, 0)", 6: "rgb(0, 255, 255)", 7: "rgb(0, 165, 255)", 8: "rgb(0, 0, 160)", 9: "rgb(128, 0, 128)", 10: "rgb(255, 0, 255)"};
 
@@ -20,7 +20,7 @@ function generateShades(colorClicked){
 }
 
 
-var color = colors_indexes_by_hex[1];
+var color = 0;
 
 //CANVAS
 
@@ -75,7 +75,7 @@ function moveMouse(e){
         var drawed = false;
         for( i = 0; i < serverImage.length; i++) {
             if(Math.round(mouseX/PIXEL_SIZE) == serverImage[i].x && Math.round(mouseY/PIXEL_SIZE) == serverImage[i].y){
-                drawed = true;
+                //drawed = true;
                 break;
             }
              
@@ -152,22 +152,15 @@ initServerCanvas();
 let serverImage = [];
 
 function loadServer(){
-    csv_pixels = client.download_pixels("map/0_0").split('\r\n');
-    for (pixel of csv_pixels){
-        parameters =  pixel.split(';')
-        if(parameters.length != 3){
-            continue;
-        }
-        x = parseInt(parameters[0]);
-        y = parseInt(parameters[1]);
-        color =  colors_hex_by_index[parseInt(parameters[2])];
-        if (color == -1){
-            continue;
-        }
-        serverImage.push({x: x, y: y, color: color});
-    }
+    csv_pixels = client.download_pixels("map/0_0");
+    serverImage = string_to_buffer(csv_pixels);
+    
     for (let i = 0; i < serverImage.length; i++){
+        if (serverImage[i].color < 0){
+            continue;
+        }
         serverCtx.beginPath();
+        
         serverCtx.fillStyle = serverImage[i].color;
         serverCtx.fillRect(serverImage[i].x*PIXEL_SIZE, serverImage[i].y*PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE);
         serverCtx.closePath();

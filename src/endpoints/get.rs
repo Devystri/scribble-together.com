@@ -1,7 +1,6 @@
 
 use crate::chunk::{self, Chunk, SIZE};
 use actix_web::{get, HttpRequest, HttpResponse, Result};
-use csv::Terminator;
 
 #[get("/tile/get/{adress:.*}")]
 async fn index(req: HttpRequest) -> Result<HttpResponse> {
@@ -11,7 +10,7 @@ async fn index(req: HttpRequest) -> Result<HttpResponse> {
         Ok(map) => map,
         Err(_) => return Ok(HttpResponse::InternalServerError().finish()),
     };
-    let chunk = match map.get_chunk(&format!("./{}", adress)) {
+    let chunk = match map.get_chunk(adress) {
         Ok(chunk) => chunk,
         Err(e) => {
             println!("{:?}", e);
@@ -19,46 +18,13 @@ async fn index(req: HttpRequest) -> Result<HttpResponse> {
         }
     };
 
-    println!("{}", adress);
-    if let Chunk::Leaf { id: _, pixels } = chunk {
-        let mut wtr = csv::WriterBuilder::new()
-            .delimiter(b';')
-            .has_headers(false)
-            .terminator(Terminator::CRLF)
-            .from_writer(vec![]);
-            for x in 0..SIZE-1 {
-                for y in 0..SIZE-1 {
-                
-                    if pixels[x][y].color < 0 {
-                        continue;
-                    }
-                    match wtr.write_record(&[
-                        x.to_string(),
-                        y.to_string(),
-                        pixels[x][y].color.to_string(),
-                    ]) {
-                        Ok(_) => (),
-                        Err(e) => {
-                            println!("{:?}", e);
-                            return Ok(HttpResponse::InternalServerError().body(e.to_string()));
-                        }
-                    }
-                }
-        }
-
-        let data = match wtr.into_inner() {
-            Ok(data) => match String::from_utf8(data) {
-                Ok(data) => data,
-                Err(e) => {
-                    println!("{:?}", e);
-                    return Ok(HttpResponse::InternalServerError().finish());
-                }
-            },
-            Err(e) => {
-                println!("{:?}", e);
-                return Ok(HttpResponse::InternalServerError().finish());
+    if let Chunk::Leaf { id: _, pixels, sessions: _ } = chunk {
+        let mut data = String::new();
+        for x in 0..(SIZE -1) {
+            for y in 0..(SIZE-1) {
+                data.push_str(&format!("{:03}{:03}{:03}\n", x, y, pixels[x][y].color));
             }
-        };
+        }
         Ok(HttpResponse::Ok().content_type("text/csv").body(data))
     } else {
         Ok(HttpResponse::NotFound().finish())

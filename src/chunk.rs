@@ -1,11 +1,12 @@
 
+use actix::Message;
 use bincode;
 use flate2::{write::ZlibEncoder, Compression};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use std::fs::{OpenOptions, self};
 use std::sync::Mutex;
-use std::{fs::File, io::BufWriter};
+use std::{ io::BufWriter};
 
 pub const SIZE: usize = 256;
 
@@ -20,6 +21,8 @@ pub enum Chunk {
     Leaf {
         #[serde(skip)]
         id: String,
+        #[serde(skip)]
+        sessions: Vec<Session>,
         pixels: Vec<Vec<Pixel>>,
     },
 }
@@ -40,10 +43,12 @@ impl Chunk {
                 return None;
             }
         }
-        let id = format!("./{}/{}_{}", parent_adress, coords.0, coords.1);
+        let id = format!("{}/{}_{}", parent_adress, coords.0, coords.1);
         let leaf = Self::Leaf {
             id,
             pixels: vec![vec![Pixel::default(); SIZE]; SIZE],
+            sessions: vec![],
+
         };
         match leaf.save(){
             Ok(_) => (),
@@ -59,7 +64,8 @@ impl Chunk {
 }
 
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Message)]
+#[rtype(result = "()")]
 pub struct Pixel {
     pub color: i8,
     #[serde(skip_serializing)]
@@ -110,9 +116,18 @@ impl Pixel {
     }
 }
 
+impl ToString for Pixel{
+    fn to_string(&self) -> String {
+        format!("{:03}{:03}{:03}\n", self.x, self.y, self.color)
+        
+    }
+}
+
 
 pub(crate) static MAP: Lazy<Mutex<Chunk>> = Lazy::new(|| Mutex::new(Chunk::new_root()));
 use errors::*;
+
+use crate::websockets::handler::Session;
 
 
 impl Chunk {
@@ -124,8 +139,8 @@ impl Chunk {
                 }
                 Ok(())
             }
-            Chunk::Leaf { id, pixels } => {
-                let file = match OpenOptions::new().write(true).create(true).truncate(true).open("".to_owned() + id + ".chunk.gz") {
+            Chunk::Leaf { id, pixels, sessions: _ } => {
+                let file = match OpenOptions::new().write(true).create(true).truncate(true).open("./".to_owned() + id + ".chunk.gz") {
                     Ok(file) => file,
                     Err(e) => return Err(SaveError::Io(e)),
                 };
@@ -140,25 +155,28 @@ impl Chunk {
 
     }
 
-    pub fn add_pixel(&mut self, pixels_adds: &[Pixel], adress: &str) -> Result<(), AddError> {
+    pub fn add_pixel(&mut self, pixels_adds: &[Pixel], adress: &str) -> Result<Vec<Session>, AddError> {
         match self {
             Chunk::Container { id: _, childrens } => {
                 for child in childrens.iter_mut() {
-                    child.add_pixel(pixels_adds, adress)?;
+                    match child.add_pixel(pixels_adds, adress){
+                        Ok(sessions) => return Ok(sessions),
+                        Err(_) => continue,
+                    }
                 }
-                Ok(())
+                Err(AddError::NotLeaf)
             }
-            Chunk::Leaf { id: _, pixels } => {
+            Chunk::Leaf { id: _, pixels, sessions } => {
                 for pixel in pixels_adds.iter() {
                     pixels[pixel.x as usize][pixel.y as usize].color = pixel.color;
                     
                 }
-                Ok(())
+                Ok(sessions.clone())
             }
         }
     }
 
-    pub fn get_chunk(&self, adress: &str) -> Result<Chunk, GetError> {
+    pub fn get_chunk(&self, adress: &str) -> Result<&Chunk, GetError> {
         match self {
             Chunk::Container { id: _, childrens } => {
                 for child in childrens.iter() {
@@ -175,11 +193,40 @@ impl Chunk {
                 }
                 Err(GetError::NotFound)
             }
-            Chunk::Leaf { id, pixels: _ } => {
+            Chunk::Leaf { id, pixels: _ , sessions: _} => {
                 if id == adress {
-                    Ok((*self).clone())
+                    Ok(self)
                 } else {
                     Err(GetError::NotAdress)
+                }
+            }
+        }
+    }
+
+    pub fn add_session(&mut self, session: &Session, adress: &str) -> Result<(), AddSessionError> {
+        match self {
+            Chunk::Container { id: _, childrens } => {
+                for child in childrens.iter_mut() {
+                    match child.add_session(session, adress){
+                        Ok(_) => return Ok(()),
+                        Err(e) => {
+                            if let AddSessionError::NotFound = e {
+                                continue;
+                            } else {
+                                return Err(e);
+                            }
+                        }
+                    }
+                }
+                Err(AddSessionError::NotFound)
+            }
+            Chunk::Leaf { id, pixels: _, sessions } => {
+                if id == adress {
+                    sessions.push(session.clone());
+                    
+                    Ok(())
+                } else {
+                    Err(AddSessionError::NotFound)
                 }
             }
         }
@@ -238,6 +285,8 @@ impl Chunk {
 
         pixels
     }
+
+
 }
 pub mod errors {
     use super::*;
@@ -255,6 +304,12 @@ pub mod errors {
     pub enum GetError {
         NotFound,
         NotAdress,
+    }
+
+    #[derive(Debug)]
+    pub enum AddSessionError {
+        NotLeaf,
+        NotFound,
     }
 }
 

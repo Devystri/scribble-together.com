@@ -1,4 +1,4 @@
-const digits_only = string => [...string].every(c => '0123456789'.includes(c));
+const digits_only = string => [...string].every(c => '-0123456789'.includes(c));
 
 
 function buffer_to_string(buffer){
@@ -27,7 +27,7 @@ function string_to_buffer(string){
         if (parameters[i].length != 9){
             continue;
         }
-        if (!digits_only(buffer[i])){
+        if (!digits_only(parameters[i])){
             continue;
         }
         buffer.push({x: parseInt(parameters[i].substring(0, 3)), y: parseInt(parameters[i].substring(3, 6)), color: parseInt(parameters[i].substring(6, 9))});
@@ -58,7 +58,7 @@ class Client{
         }
     }
     register(x, y) {
-        this.socket.send("/register root/" + x.toString() + "_" + y.toString());
+        this.socket.send("/register map/" + x.toString() + "_" + y.toString());
     }
 
     init_client (){

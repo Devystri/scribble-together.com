@@ -1,12 +1,15 @@
-use std::{time::{Duration, Instant}};
+use std::{time::{Duration, Instant}, sync::Mutex, string};
 
-use crate::{chunk::{self, Pixel}};
-use actix::{Actor, ActorContext, AsyncContext, StreamHandler, Addr};
+use crate::{chunk::{self, Pixel}, common::is_numeric};
+use actix::{Actor, ActorContext, AsyncContext, StreamHandler, Addr, Handler, Message};
 use actix_web::{
     web::{self},
     Error, HttpRequest, HttpResponse,
 };
 use actix_web_actors::ws;
+
+use futures_util::Stream;
+use once_cell::sync::Lazy;
 
 
 use self::errors::HandleRequestError;
@@ -16,6 +19,21 @@ pub struct WebSocketServer {
     hb: Instant,
     chunks_adress: [String; 9],
 }
+
+#[derive(Message)]
+#[rtype(result = "()")]
+struct ServerEvent {
+    event: String,
+}
+
+impl Handler<ServerEvent> for WebSocketServer {
+    type Result = ();
+
+    fn handle(&mut self, msg: ServerEvent, ctx: &mut Self::Context) {
+        ctx.text(msg.event);
+    }
+}
+
 /// How often heartbeat pings are sent
 const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(5);
 /// How long before lack of client response causes a timeout
@@ -78,8 +96,19 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WebSocketServer {
                             self.chunks_adress[6] = format!("{}_{}", x - 1, y - 1);
                             self.chunks_adress[7] = format!("{}_{}", x, y - 1);
                             self.chunks_adress[8] = format!("{}_{}", x + 1, y - 1);
-
-
+                            let mut map = match chunk::MAP.lock() {
+                                Ok(map) => map,
+                                Err(e) => {
+                                    println!("{:?}", e);
+                                    return;
+                                }
+                            };
+                            let addr = ctx.address();
+                            let sess = Session{ addr, id: 9 };
+                            match map.add_session(&sess, &self.chunks_adress[0]){
+                                Ok(_) => (),
+                                Err(e) => println!("{:?}", e),
+                            }
 
                         },
                         _ => (),
@@ -119,6 +148,17 @@ impl WebSocketServer {
         });
     }
 
+    fn send_update(&self, sessions: &[Session], pixels: &[Pixel]) {
+        for session in sessions {
+            let addr = session.addr.clone();
+            let mut data=  String::from("/update ");
+            for pixel in pixels {
+                data.push_str(&pixel.to_string());
+            }
+            addr.do_send(ServerEvent{ event: data });
+        }
+    }
+
     fn handle_request(&self, message: &str) -> Result<(), HandleRequestError> {
                 
         let pixel: Vec<Pixel> = chunk::Chunk::from_string(message);
@@ -132,7 +172,7 @@ impl WebSocketServer {
         };
 
         match map.add_pixel(&pixel, "") {
-            Ok(_) => {}
+            Ok(sessions) => {self.send_update(&sessions, &pixel); },
             Err(e) => println!("{:?}", e),
         }
         match map.save() {
@@ -146,7 +186,7 @@ impl WebSocketServer {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Session{
     pub addr: Addr<WebSocketServer>,
     pub id: usize,
@@ -156,7 +196,7 @@ pub struct Session{
 pub async fn index(req: HttpRequest, stream: web::Payload) -> Result<HttpResponse, Error> {
     let resp = ws::start(WebSocketServer::new(), &req, stream);
 
-  
+   
     
     println!("{:?}", resp);
     resp
