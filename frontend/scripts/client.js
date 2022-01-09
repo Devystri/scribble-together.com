@@ -71,6 +71,16 @@ class Client{
             this.register(0,0)
         };
 
+        this.socket.onmessage = (event) => {
+            let param = event.data.split(' ');
+            if (param[0] == "/update"){
+                let data = string_to_buffer(param[1]);
+                this.update(data);
+                console.log(data);
+
+            }
+        } 
+
         setInterval( ()=>{
             if (this.buffer.length > 0) {
                 if(this.socket.readyState){

@@ -161,13 +161,27 @@ function loadServer(){
         }
         serverCtx.beginPath();
         
-        serverCtx.fillStyle = serverImage[i].color;
+        serverCtx.fillStyle = colors_hex_by_index[serverImage[i].color];
         serverCtx.fillRect(serverImage[i].x*PIXEL_SIZE, serverImage[i].y*PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE);
         serverCtx.closePath();
     }
 }
 client.init_client();
 loadServer();
+
+client.update = (data) =>{
+    for (let i = 0; i < data.length; i++){
+        if (data[i].color < 0){
+            serverCtx.fillStyle = "rgba(0,0,0,0)";
+        }else{
+            serverCtx.fillStyle = colors_hex_by_index[data[i].color];
+        }
+        serverCtx.beginPath();
+        
+        serverCtx.fillRect(data[i].x*PIXEL_SIZE, data[i].y*PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE);
+        serverCtx.closePath();
+    }
+}
 
 // Disable the contextual menu
 canvas.oncontextmenu = function() {
