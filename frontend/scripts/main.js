@@ -1,9 +1,9 @@
 //COLORS
-
 //store colors in an array
 var colors = { "black": "rgb(0, 0, 0)", "red": "rgb(255, 0, 0)", "orange": "rgb(255, 165, 0)", "yellow": "rgb(255, 255, 0)", "lightGreen": "rgb(154, 205, 50)", "green": "rgb(0, 255, 0)", "lightBlue": "rgb(0, 255, 255)", "blue": "rgb(0, 165, 255)", "darkPurpule": "rgb(0, 0, 160)", "purpule": "rgb(128, 0, 128)", "pink": "rgb(255, 0, 255)"};
 var colors_indexes_by_rgb = {"rgb(0, 0, 0)": 0, "rgb(255, 0, 0)": 1, "rgb(255, 165, 0)": 2, "rgb(255, 255, 0)": 3, "rgb(154, 205, 50)": 4, "rgb(0, 255, 0)": 5, "rgb(0, 255, 255)": 6, "rgb(0, 165, 255)": 7, "rgb(0, 0, 160)": 8, "rgb(128, 0, 128)": 9, "rgb(255, 0, 255)": 10};
 var colors_rgb_by_index = {0: "rgb(0, 0, 0)", 1: "rgb(255, 0, 0)", 2: "rgb(255, 165, 0)", 3: "rgb(255, 255, 0)", 4: "rgb(154, 205, 50)", 5: "rgb(0, 255, 0)", 6: "rgb(0, 255, 255)", 7: "rgb(0, 165, 255)", 8: "rgb(0, 0, 160)", 9: "rgb(128, 0, 128)", 10: "rgb(255, 0, 255)"};
+
 
 for (key in colors){
     //Create a li 
@@ -130,6 +130,11 @@ function load(){
     }
 }
 
+//when the page is resized : load()
+window.onresize = function(){
+    load();
+}
+
 //Canvas Server
 //Size of canvas
  var serverCanvas, serverCtx, serverCanvasWidth, serverCanvasHeight;
@@ -201,3 +206,4 @@ canvas.onmousedown = function(e){
 canvas.onmouseup = function(e){
     canvas.style.cursor = "crosshair";
 }
+
